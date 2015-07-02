@@ -25,7 +25,7 @@ W_TMIN_ID = 2
 W_TAVG_ID = 3
 W_TMAX_ID = 4
 W_RAIN_ID = 5
-MIN_TEMP = 0
+MIN_TEMP = 10
 FIRSTDAY_WEATHER = "01/04"
 ADJ_TE_FACTOR = 1
 
@@ -195,11 +195,18 @@ def writeFusionDataset(dataset):
                     phEnd = getDataInterval(2, float(harvestData[gp][y][v][t][3]))
                     # weather data
                     weatherData = computeWeatherData(dateStart, harvestData[gp][y][v][t][0]) 
+                    """
                     fregoniIndex = getDataInterval(3, float(weatherData[0]))
                     huglinIndex = getDataInterval(4, float(weatherData[1]))
                     branasIndex = getDataInterval(5, float(weatherData[2]))
                     thermalExcursion = getDataInterval(7, float(weatherData[3])) 
-                    rain = getDataInterval(6, float(weatherData[4]))
+                    rain = getDataInterval(6, float(weatherData[4])) 
+                    """
+                    fregoniIndex = math.ceil(float(weatherData[0]))
+                    huglinIndex = math.ceil(float(weatherData[1]))
+                    branasIndex = math.ceil(float(weatherData[2]))
+                    thermalExcursion = math.ceil(float(weatherData[3]))
+                    rain = math.ceil(float(weatherData[4]))
                     # new line
                     line = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}\n".format(gp, y, sugarStart,
                         acidityStart, phStart, sugarEnd, acidityEnd, phEnd, fregoniIndex, huglinIndex, branasIndex, thermalExcursion, rain)

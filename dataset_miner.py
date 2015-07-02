@@ -27,8 +27,9 @@ W_TMAX_ID = 4
 W_RAIN_ID = 5
 MIN_TEMP = 0
 FIRSTDAY_WEATHER = "01/04"
+ADJ_TE_FACTOR = 1
 
-NUM_BLOCKS = 5
+NUM_BLOCKS = 7
 SEPARATOR = ","
 INDEX_NAME = ["sugar", "acidity", "ph", "fregoniIndex", "huglinIndex", "branasIndex", "thermalExcursion", "rain"] 
 
@@ -73,7 +74,7 @@ def readWeather(dataset):
             minValueTE = min(minValueTE, temporalExcursion)
             maxValueTE = max(maxValueTE, temporalExcursion)
 
-    minMaxValueWD = [[minValueRain, maxValueRain], [minValueTE, maxValueTE]]
+    minMaxValueWD = [[minValueRain, maxValueRain], [minValueTE, maxValueTE / ADJ_TE_FACTOR]]
 
 def readPreHarvest(dataset):
     """ Read from file pre-harvest dataset """
@@ -159,6 +160,7 @@ def computeDataInterval():
             i = block + 1
             maxRangeValue.append((math.ceil((minValue + (i * distance)) * 100)) / 100)
         intervalList.append(maxRangeValue)
+    print intervalList
     return intervalList
 
 def getDataInterval(index, value):
@@ -196,8 +198,8 @@ def writeFusionDataset(dataset):
                     fregoniIndex = getDataInterval(3, float(weatherData[0]))
                     huglinIndex = getDataInterval(4, float(weatherData[1]))
                     branasIndex = getDataInterval(5, float(weatherData[2]))
-                    thermalExcursion = getDataInterval(6, float(weatherData[3])) 
-                    rain = getDataInterval(7, float(weatherData[4]))
+                    thermalExcursion = getDataInterval(7, float(weatherData[3])) 
+                    rain = getDataInterval(6, float(weatherData[4]))
                     # new line
                     line = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}\n".format(gp, y, sugarStart,
                         acidityStart, phStart, sugarEnd, acidityEnd, phEnd, fregoniIndex, huglinIndex, branasIndex, thermalExcursion, rain)

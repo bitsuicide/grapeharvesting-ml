@@ -9,7 +9,7 @@ def generateAllStates(start, end):
         stateList.append(i)
     return stateList
 
-def readStatesFromData(dataset, grape=None):
+def readStatesFromData(dataset, grape=None, years=None):
     setElem = set()
     setElem.add(000)
     transaction = list()
@@ -20,7 +20,37 @@ def readStatesFromData(dataset, grape=None):
         if line == "":
             break 
         splitLine = line.split(",")
-        if grape == None or splitLine[0] == grape:
+        grapeValue = splitLine[0]
+        yearsValue = splitLine[1]
+        if (grape == None or grapeValue == grape) and (years == None or yearsValue not in years):
+            startState = 000
+            endState = int("{}{}{}".format(splitLine[5], splitLine[6], splitLine[7]))
+            weather = (float(splitLine[8]), float(splitLine[9]), float(splitLine[10]), float(splitLine[11]), float(splitLine[12]))
+            setElem.add(endState)
+            #print endState
+            if splitLine[2] != "#":
+                startState = int("{}{}{}".format(splitLine[2], splitLine[3], splitLine[4])) 
+                setElem.add(startState)
+            elif lastEndState != None:
+                finalState.add(lastEndState)
+            transaction.append((startState, endState, weather))
+            lastEndState = endState
+    return list(setElem), transaction, list(finalState)
+
+def readStateFromSingleYear(dataset, grape, year):
+    setElem = set()
+    setElem.add(000)
+    transaction = list()
+    finalState = set()
+    lastEndState = None
+    while True:
+        line = dataset.readline()
+        if line == "":
+            break 
+        splitLine = line.split(",")
+        grapeValue = splitLine[0]
+        yearsValue = splitLine[1]
+        if (grape == None or grapeValue == grape) and yearsValue == year:
             startState = 000
             endState = int("{}{}{}".format(splitLine[5], splitLine[6], splitLine[7]))
             weather = (float(splitLine[8]), float(splitLine[9]), float(splitLine[10]), float(splitLine[11]), float(splitLine[12]))

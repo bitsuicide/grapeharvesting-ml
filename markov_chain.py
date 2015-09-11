@@ -1,13 +1,19 @@
 import data_to_mm
+import MAPE
 from igraph import *
 from scipy.spatial import distance
 import sys
+import dataset_miner
 
 DATASET_DIR = "dataset"
 FUSION_DATASET = "fusion_dataset.txt"
+TEST_OUTPUT = "test.txt"
+
+graph = None
 
 def initGraph(stateList, transitionList, finalStateList, weather=True):
-    """ Initi modified markov chain """
+    global graph
+    """ Init modified markov chain """
     graph = Graph(directed=True)
     nodeCount = len(stateList)
     graph.add_vertices(nodeCount)
@@ -62,7 +68,6 @@ def initGraph(stateList, transitionList, finalStateList, weather=True):
     # Init weight of edges
     for edge in graph.es:
         edge["weigth"] = transitionMatrixProb[edge.source][edge.target] / float(graph.degree(edge.source, type="out"))
-    return graph
 
 def euclidianDistance(v1, v2):
     """ Compute euclidian distance between w1 and w2 """
@@ -125,26 +130,87 @@ def findPath(sourceVertex, inputWeatherList, weather=True):
     state = sourceVertex 
     step = 0
     statePath = [state]
-    while state["final"] != True or step > len(inputWeatherList):
+    while step < len(inputWeatherList) - 1:
         newState = nextState(state, inputWeatherList[step], weather)
+        if newState == None: #end of path
+            break
         step += 1
         statePath.append(newState)
         state = newState
     return statePath
 
-if __name__ == "__main__":
+def startMarkov(grape, year, output, weather):
     # Read from dataset
     fileDataset = open("{0}/{1}".format(DATASET_DIR, FUSION_DATASET), "r")
-    stateList, transitionList, finalStateList = data_to_mm.readStatesFromData(fileDataset, grape = "Merlot")
+    #training
+    stateList, transitionList, finalStateList = data_to_mm.readStatesFromData(fileDataset, grape = grape, years = [year])
+    fileDataset.close()
+    #test
+    fileDataset = open("{0}/{1}".format(DATASET_DIR, FUSION_DATASET), "r")
+    testStateList, testTransitionList, testFinalStateList = data_to_mm.readStateFromSingleYear(fileDataset, grape = grape, year = year)
     fileDataset.close()
 
-    # Init graph
-    graph = initGraph(stateList, transitionList, finalStateList, True)
-    layout = graph.layout("kk")
-    bestVertex = findState("000")
-    print "Nodo di partenza: " + str(bestVertex["state"])
-    path = findPath(bestVertex, [[83043.0,1826.0,620768.0,15.0,231.0], [0.0,78.0,1359.0,16.0,13.0], [0.0,115.0,2341.0,12.0,14.0], [0.0,102.0,829.0,15.0,7.0], [67.0,70.0,3786.0,12.0,35.0], [0.0,99.0,4269.0,13.0,28.0]], True)
-    print "Step elaborati: " + str(len(path)) + " Path: " + str(path)
-    #print graph.vs["weather"]
-    #plot(graph, layout = layout)
+    realStateList = []
+    realState = None
+    climaList = []
+    clima = None
+    j = 0
+    for t in testTransitionList:
+        startState = str(t[0])
+        if startState == "0": # new trans
+            if j != 0:
+                realStateList.append(realState)
+                climaList.append(clima)
+            realState = [startState]
+            clima = [t[2]]
+        else:
+            realState.append(startState)
+            clima.append(t[2])
+        j += 1
+    realStateList.append(realState)
+    climaList.append(clima)
+
+    print realStateList
+    if realStateList == [None]:
+        return 
+
+    j = 0
+    for rs in realStateList: # computation of all transactions
+        print "Trans #" + str(j)
+        print "Real State: " + str(rs)
+
+        # Init graph
+        initGraph(stateList, transitionList, finalStateList, weather)
+        layout = graph.layout("kk")
+        bestVertex = findState(rs[0])
+        #print "Nodo di partenza: " + str(bestVertex["state"])
+        print climaList[j]
+        path = findPath(bestVertex, climaList[j] , weather)
+        #print "Step elaborati: " + str(len(path)) + " Path: " + str(path)
+        i = 0
+        predictionState = []
+        for step in path:
+            i += 1
+            predictionState.append(str(step["state"]))
+
+        print "Prediction State " + str(predictionState)
+        mape = MAPE.computeMAPE(predictionState[1:], rs[1:])
+        print mape
+        if output != None:
+            #line = grape + "," + year + "," + str(j) + "," + str(rs) + "," + str(predictionState) + "," + str(mape) + "\n"
+            line = grape + "," + year + "," + str(j) + "," + str(mape) + "\n"
+            testOutput.write(line)
+        j += 1
+    plot(graph, layout = layout, vertex_label = graph.vs["state"], vertex_size = 35)
+
+if __name__ == "__main__":
+    """
+    testOutput = open("{0}/{1}".format(DATASET_DIR, TEST_OUTPUT), "w")
+    for grape in dataset_miner.GRAPE:
+        for year in dataset_miner.YEAR:
+            startMarkov(grape, year, testOutput, False)
+    testOutput.close()
+    """
+    startMarkov("Trebbiano", "2003", None, False)
+
     
